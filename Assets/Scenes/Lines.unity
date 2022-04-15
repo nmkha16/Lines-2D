@@ -378,5 +378,9 @@ PrefabInstance:
       propertyPath: isSelected
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 798227920120007963, guid: 8f914c25c1229b14ab72c0704d09ed24, type: 3}
+      propertyPath: nextBallsNum
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8f914c25c1229b14ab72c0704d09ed24, type: 3}

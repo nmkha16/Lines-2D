@@ -15,7 +15,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 4294967295
   m_IsActive: 1
 --- !u!4 &798227920120007962
 Transform:
@@ -49,4 +49,9 @@ MonoBehaviour:
   ballPrefab: {fileID: 9214530130593130591, guid: a6e55772cd216094ba3a0cf48a4398c4, type: 3}
   _camera: {fileID: 0}
   initialBallsNum: 5
-  selectedBallPos: {x: 0, y: 0}
+  nextBallsNum: 0
+  red: {r: 0.99215686, g: 0.29411766, b: 0.29411766, a: 1}
+  yellow: {r: 1, g: 0.8, b: 0.28627452, a: 1}
+  blue: {r: 0.21568628, g: 0.5803922, b: 0.98039216, a: 1}
+  pink: {r: 1, g: 0.3254902, b: 0.8352941, a: 1}
+  cyan: {r: 0.3254902, g: 0.9882353, b: 1, a: 1}

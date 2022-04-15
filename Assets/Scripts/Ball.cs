@@ -9,7 +9,6 @@ public class Ball : MonoBehaviour
     public GameObject highLight;
     [SerializeField] public GridManager gridManager;
 
-
     // set random color
     public void init(int colorID)
     {
@@ -46,12 +45,9 @@ public class Ball : MonoBehaviour
 
 
 
-
-
-
     private void OnMouseDown()
     {
-        if (gridManager.isSelected)
+        if (GridManager.isSelected)
         {
             cancelSelect(GameObject.FindGameObjectWithTag("SelectedBall"));
         }
@@ -59,16 +55,17 @@ public class Ball : MonoBehaviour
         {
             highLight.SetActive(true);
             this.tag = "SelectedBall";
-            gridManager.isSelected = true;
+            GridManager.isSelected = true;
         }
     }
 
     private void cancelSelect(GameObject selectedBall)
     {
-        selectedBall.tag = "Ball";
+        if (selectedBall == null) return;
 
+        selectedBall.tag = "Ball";
         selectedBall.GetComponent<Ball>().highLight.SetActive(false);
-        gridManager.isSelected = false;
+        GridManager.isSelected = false;
     }
 
 

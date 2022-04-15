@@ -187,7 +187,6 @@ MonoBehaviour:
   spriteRender: {fileID: 6510095951623332004}
   highLight: {fileID: 4147461853209155148}
   gridManager: {fileID: 798227920120007963, guid: 8f914c25c1229b14ab72c0704d09ed24, type: 3}
-  isSelected: 0
 --- !u!58 &-1879364553673863325
 CircleCollider2D:
   m_ObjectHideFlags: 0
