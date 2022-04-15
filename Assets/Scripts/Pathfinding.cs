@@ -85,6 +85,11 @@ public class Pathfinding
         }
 
 
+        if (!parent.ContainsKey(end)) // can't find end's parent means one thing: can't find path
+        {
+            return new List<Vector2>();
+        }
+
         for (Vector2 at = end; at != null;)
         {
             if (parent[at]  == null|| at == start)
@@ -94,15 +99,10 @@ public class Pathfinding
                 break;
             }
             shortestPath.Add(at);
+            
             at = (Vector2)parent[at];
         }
-        shortestPath.Reverse(); // the path is in backward
-
-        foreach (Vector2 currentVector in shortestPath)
-        {
-            Debug.Log(currentVector);
-        }
-
+        shortestPath.Reverse(); // the path is in backward since we traverse from end to start, we reverse it to get the start to end
         return shortestPath;
     }
 

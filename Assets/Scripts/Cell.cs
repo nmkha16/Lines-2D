@@ -43,34 +43,64 @@ public class Cell : MonoBehaviour
 
 
             // do remove old ball position
-            GridManager.Instance.balls.Remove(oldBallPos);
+            GridManager.balls.Remove(oldBallPos);
             // to mark start position is empty
             List<Vector2> path = Pathfinding.BFS(oldBallPos, newBallPos);
 
-            //move ball to new position
-            selectedBall.transform.position = newBallPos;
+            if (path.Count== 0) // return path is zero meaning no path is found
+            {
+                GridManager.balls.Add(oldBallPos,selectedBall); // set the balls dictionary back
+                return;
+            }
+
+
+            // perform move ball
+            StartCoroutine(moveBall(path, selectedBall));
+
+            // rename ball properties
             selectedBall.highLight.SetActive(false);
             selectedBall.tag = "Ball";
             selectedBall.name = $"Ball {newBallPos.x} {newBallPos.y}";
 
             //add new ball pos to dictionary & remove old ball position
-            GridManager.Instance.balls.Add(newBallPos, selectedBall);
-
-
-
-
+            GridManager.balls.Add(newBallPos, selectedBall);
             GridManager.isSelected = false;
 
-            // each is finished, queue 3 new balll
+
+
             if (GridManager.isNextTurn)
             {
                 GridManager.Instance.generateQueuedBalls(GridManager.queuePos);
                 GridManager.isNextTurn = false;
             }
-            GridManager.queuePos = GridManager.Instance.generateBalls(3, true);
-            GridManager.isNextTurn = true;
+
+            // generate ball for queue
+            if (!GridManager.isNextTurn)
+            {
+                GridManager.queuePos = GridManager.Instance.generateBalls(3, true);
+                GridManager.isNextTurn = true;
+            }
+
+
+            // check line for ball explosion
+            GridManager.Instance.checkLines(selectedBall);
         }
     }
 
+
+    // move ball 
+    IEnumerator moveBall(List<Vector2> road, Ball ball)
+    {
+        int i;
+        for (i = 0; i < road.Count;++i)
+        {
+
+            //move ball to new position
+            ball.transform.position = Vector3.Lerp(ball.transform.position, road[i], Time.deltaTime * 50f);
+
+            yield return new WaitForFixedUpdate();
+
+        }
+    }
     
 }

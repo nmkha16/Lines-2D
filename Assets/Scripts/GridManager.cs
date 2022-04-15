@@ -12,11 +12,10 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Camera _camera;
     [SerializeField] public int initialBallsNum, nextBallsNum;
 
-
     [SerializeField] private Color red, yellow, blue, pink, cyan;
 
-    public Dictionary<Vector2,Ball> balls;
-    public Dictionary<Vector2,Cell> cells;
+    public static Dictionary<Vector2,Ball> balls;
+    public static Dictionary<Vector2,Cell> cells;
 
     public static bool isSelected, isNextTurn;
 
@@ -24,7 +23,7 @@ public class GridManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        isNextTurn = false;
         Instance = this;
         isSelected = false;
         balls = new Dictionary<Vector2, Ball>();
@@ -54,6 +53,8 @@ public class GridManager : MonoBehaviour
         }
         _camera.transform.position = new Vector3((float)rows / 2 - 0.5f, (float)cols / 2 - 0.5f, -10);
         generateBalls(initialBallsNum);
+        queuePos = generateBalls(3, true);
+        isNextTurn = true;
     }
 
     /*
@@ -110,7 +111,7 @@ public class GridManager : MonoBehaviour
     public Vector2[] generateBalls(int targetNum,bool queue)
     {
         Vector2[] nextQueueBalls = new Vector2[3];
-        int count = rows * cols;
+        int count = rows * cols - balls.Count;
 
         int count2 = count - targetNum;
 
@@ -228,5 +229,83 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    // generate 
+
+    // we check 4 direction of the balls user just moved to
+    public void checkLines(Ball movedBall)
+    {
+        List<Vector2> ballsExploded = new List<Vector2>();
+        int[] u = new int[]{ 0, 1, 1, 1 };
+        int[] v = new int[] { 1, 0, -1, 1 };
+
+        int count; // count number of same color balls
+        int i, j;
+
+
+        Vector2 movedBallPos = getPositionFromName(movedBall.name);
+
+        // dIndex is 4 directions
+        for (int dIndex = 0; dIndex < 4; dIndex++)
+        {
+            count = 0;
+
+            i = Mathf.RoundToInt(movedBallPos.x);
+            j = Mathf.RoundToInt(movedBallPos.y);
+
+            while (true)
+            {
+                i+=u[dIndex];
+                j+=v[dIndex];
+
+                if (i < 0 || j < 0 || i >= rows || j >= cols) break;
+                if (getBallPosition(new Vector2(i, j)) == null) break;
+                if (movedBall._colorID != getBallPosition(new Vector2(i, j))._colorID) break;
+
+                count++;
+            }
+
+            i = Mathf.RoundToInt(movedBallPos.x);
+            j = Mathf.RoundToInt(movedBallPos.y);
+
+            while (true)
+            {
+                i -= u[dIndex];
+                j -= v[dIndex];
+
+                if (i < 0 || j < 0 || i >= rows || j >= cols) break;
+                if (getBallPosition(new Vector2(i, j)) == null) break;
+                if (movedBall._colorID != getBallPosition(new Vector2(i, j))._colorID) break;
+
+                count++;
+            }
+
+            count++;
+
+            if (count >= 5)
+            {
+                while (count--> 0)
+                {
+                    i += u[dIndex];
+                    j += v[dIndex];
+
+                    if (i!= movedBallPos.x || j!= movedBallPos.y)
+                    {
+                        ballsExploded.Add(new Vector2(i, j));
+                        
+                    }
+                }
+            }
+        }
+        
+        if (ballsExploded.Count > 0)
+        {
+            ballsExploded.Add(movedBallPos);
+
+            foreach(Vector2 b in ballsExploded)
+            {
+                Debug.Log(b);
+            }
+        }
+
+        
+    }
 }
