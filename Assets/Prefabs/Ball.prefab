@@ -107,6 +107,7 @@ MonoBehaviour:
   highLight: {fileID: 0}
   trailRender: {fileID: 6660029389689157861}
   gridManager: {fileID: 798227920120007963, guid: 8f914c25c1229b14ab72c0704d09ed24, type: 3}
+  _collider: {fileID: -1879364553673863325}
   animator: {fileID: 0}
   _colorID: 0
 --- !u!58 &-1879364553673863325

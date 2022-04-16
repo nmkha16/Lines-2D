@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GridManager : MonoBehaviour
 {
@@ -21,22 +22,39 @@ public class GridManager : MonoBehaviour
     public Dictionary<Vector2,Ball> balls;
     public Dictionary<Vector2,Cell> cells;
 
-
     public static bool isSelected, isGhostSelected;
     private float timer;
-    public Dictionary<Vector2, Ball> ghostBalls; // to track how many ghost ball on screen
+    public Dictionary<Vector2, Ball> ghostBalls; // to track how many ghost ball on screen and make it easier to store save
 
-    public Vector2[] queuePos;
+    private List<Vector2> queuePos;
+
+    public bool readyToSpawnGhost;
+
+    public List<Image> queueBall;
     // Start is called before the first frame update
     void Start()
     {
+        PlayerPrefs.SetInt("load",1) ;
         Instance = this;
         isSelected = false;
         balls = new Dictionary<Vector2, Ball>();
         cells = new Dictionary<Vector2, Cell>();
         ghostBalls = new Dictionary<Vector2, Ball>();
-        generateGrid();
+        queuePos = new List<Vector2>();
+        readyToSpawnGhost = false;
+
         timer = 3f;
+
+
+        generateGrid();
+        if (PlayerPrefs.GetInt("load") == 0)
+        {
+            constructGameFresh();
+        }
+        else
+        {
+            load();
+        }
     }
 
 
@@ -47,7 +65,9 @@ public class GridManager : MonoBehaviour
         if (timer < 0)
         {
             if (ghostBalls.Count< 3){
-                generateGhostBall(1);
+                // set ready to spawn ghost true
+                readyToSpawnGhost=true;
+                //generateGhostBall(1);
             }
 
             timer = 3f;
@@ -74,9 +94,7 @@ public class GridManager : MonoBehaviour
             }
         }
         _camera.transform.position = new Vector3((float)rows / 2 - 0.5f, (float)cols / 2 - 0.5f, -10);
-        generateBalls(initialBallsNum);
-        disableColliderAtBalls();
-        queuePos = generateBalls(3, true);
+        
     }
 
     /*
@@ -137,9 +155,11 @@ public class GridManager : MonoBehaviour
 
     }
 
-    public Vector2[] generateBalls(int targetNum,bool queue)
+
+    // bool queue is fake argument for generate queue first
+    public List<Vector2> generateBalls(int targetNum,bool queue)
     {
-        Vector2[] nextQueueBalls = new Vector2[3];
+        List<Vector2> nextQueueBalls = new List<Vector2>();
         int count = rows * cols - balls.Count;
 
         int count2 = count - targetNum;
@@ -164,24 +184,25 @@ public class GridManager : MonoBehaviour
                         nextPlace--;
                         if (nextPlace == 0)
                         {
-                            if (queue) { 
-                                //mark position
-                                nextQueueBalls[k] = new Vector2(i, j);
-                                // set queue ball color
-                                cells[nextQueueBalls[k]].queueIDColor = Random.Range(0, 5);
-                                setNextSpawnColor(cells[nextQueueBalls[k]], cells[nextQueueBalls[k]].queueIDColor);
-                                cells[nextQueueBalls[k++]].nextSpawn.SetActive(true);
-                                break;
-                            }                            
+
+                            //mark position
+                            nextQueueBalls.Add(new Vector2(i, j));
+                            // set queue ball color
+                            cells[nextQueueBalls[k]].queueIDColor = Random.Range(0, 5);
+                            setNextSpawnColor(cells[nextQueueBalls[k]], cells[nextQueueBalls[k]].queueIDColor);
+                            cells[nextQueueBalls[k++]].nextSpawn.SetActive(true);
+                            break;
+                                                       
                         }
                     }
                 }
             }
         }
+        setNextQueueBallsHUD(nextQueueBalls);
         return nextQueueBalls;
     }
 
-    public void generateQueuedBalls(Vector2[] queuePos)
+    public void generateQueuedBalls(List<Vector2> queuePos)
     {
         foreach (Vector2 pos in queuePos)
         {
@@ -212,7 +233,7 @@ public class GridManager : MonoBehaviour
     }
 
 
-    private void generateGhostBall(int targetNum)
+    public void generateGhostBall(int targetNum)
     {
         int count = rows * cols - balls.Count - ghostBalls.Count;
 
@@ -243,7 +264,7 @@ public class GridManager : MonoBehaviour
                             spawnedBall.name = $"GhostBall {i} {j}";
                             spawnedBall.init(Random.Range(0, 5));
 
-                            balls.Add(new Vector2(i, j), spawnedBall);
+                            //balls.Add(new Vector2(i, j), spawnedBall);
                             ghostBalls.Add(new Vector2(i,j),spawnedBall);
 
                             isPlaced = true;
@@ -253,6 +274,8 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
+        // reset readyToSpawnGhost ball back to false
+        readyToSpawnGhost = false;
     }
     // get ball at position
     public Ball getBallPosition(Vector2 pos)
@@ -265,6 +288,17 @@ public class GridManager : MonoBehaviour
         return null;
     }
 
+    // get ghost ball at position
+    public Ball getGhostBallPosition(Vector2 pos)
+    {
+        if (ghostBalls.TryGetValue(pos,out var ghostBall))
+        {
+            return ghostBall;
+        }
+        return null;
+    }
+
+    // get cell at position
     public Cell getCellPosition(Vector2 pos)
     {
         if (cells.TryGetValue(pos, out var cell))
@@ -346,7 +380,11 @@ public class GridManager : MonoBehaviour
             ObjectPooler.Instance.DestroyOnExplosion(readyToExplodeBall);
         }
 
-        enableColliderAtBalls();
+        enableColliderAtNoBalls();
+        
+        // update score
+        IngameHUD.Instance.updateScore(pos.Count);
+
     }
 
 
@@ -356,22 +394,165 @@ public class GridManager : MonoBehaviour
         // traverse through balls dictionary key
         foreach(var pos in balls.Keys)
         {
-            cells[pos].GetComponent<BoxCollider2D>().enabled = false;
+            cells[pos]._collider.enabled = false;
         }
     }
 
     
     // enable collider on cell which doesn't have a ball on it
-    public void enableColliderAtBalls()
+    public void enableColliderAtNoBalls()
     {
         // traverse through balls dictionary key
         foreach (var pos in cells.Keys)
         {
             if (getBallPosition(pos) == null)
             {
-                cells[pos].GetComponent<BoxCollider2D>().enabled = true;
+                cells[pos]._collider.enabled = true;
             }
         }
     }
-    
+
+    // disable all cells interaction
+    public void disableAllCellsCollider(bool toDisable)
+    {
+        if (toDisable)
+        {
+            foreach (var pos in cells.Keys)
+            {
+                cells[pos]._collider.enabled = false;
+            }
+        }
+        else
+        {
+            enableColliderAtNoBalls();
+        }
+    }
+    //disable all balls interaction
+    public void disableAllBallsCollider(bool toDisable)
+    {
+        if (toDisable)
+        {
+            foreach (var pos in balls.Keys)
+            {
+                balls[pos]._collider.enabled = false;
+            }
+        }
+        else
+        {
+            foreach (var pos in balls.Keys)
+            {
+                balls[pos]._collider.enabled = true;
+            }
+        }
+    }
+
+
+    public List<Vector2> getQueuePos()
+    {
+        return queuePos;
+    }
+
+    public void setQueuePos(List<Vector2> newPos)
+    {
+        queuePos = newPos;
+    }
+
+    private void setNextQueueBallsHUD(List<Vector2> nextQueueBalls)
+    {
+        int i = 0;
+        foreach(Vector2 pos in nextQueueBalls)
+        {
+            Color color = cells[pos].nextSpawnRenderer.color;
+
+            // only 1-2 balls are queued since the map is full
+            // change remaining queue ball on hud to white
+            // when there are last spot, nextQueueBalls return same spot 3 times which makes thing trickier
+            if (i>0 && nextQueueBalls[i-1] == pos)
+            {
+                color = Color.white;
+            }
+
+            color.a = 0.85f;
+
+            queueBall[i++].color = color;
+        }       
+    }
+
+
+
+    // do the save
+    public Savestate save()
+    {
+        Dictionary<Vector2, int> _queuePos = new Dictionary<Vector2, int>();
+        // store current queue and their color
+        foreach(var pos in queuePos)
+        {
+            _queuePos.Add(pos, cells[pos].queueIDColor);
+        }
+
+        return new Savestate(balls, ghostBalls, _queuePos, IngameHUD.Instance.getTotalTimer(), IngameHUD.Instance.getTotalScore());        
+    }
+
+    // perform load
+    private void load()
+    {
+        Savestate saveFile = IngameHUD.Instance.loadGame();
+        if (saveFile == null) return;
+        // update score & time
+        IngameHUD.Instance.updateScore(saveFile._playScore);
+        IngameHUD.Instance.updateTimer(saveFile._playTime);
+
+        // load balls & ghostdictionary
+        // pending
+
+        // load queued balls List
+        //queuePos = saveFile._nextQueueBallsPos;
+
+        // do construct game
+        constructGameFromSave(saveFile._ballPos,saveFile._ghostBallPos, saveFile._nextQueueBallsPos);
+
+    }
+
+    private void constructGameFromSave(Dictionary<Vector2,int> ballsPos, Dictionary<Vector2, int> ghostBallsPos,
+        Dictionary<Vector2,int> queueNextBallPos)
+    {
+        // spawn normal ball
+        foreach (Vector2 pos in ballsPos.Keys)
+        {
+            GameObject obj = ObjectPooler.Instance.getPooledObject("Ball");
+            var ballScript = obj.GetComponent<Ball>();
+            ballScript.init(ballsPos[pos]);
+            obj.transform.position = pos;
+            balls.Add(pos, ballScript);
+        }
+
+        // spawn ghost 
+        foreach(Vector2 pos in ghostBallsPos.Keys)
+        {
+            var obj = Instantiate(ghostBallPrefab, new Vector3(pos.x,pos.y), Quaternion.identity);
+            obj.name = $"GhostBall {pos.x} {pos.y}";
+            obj.init(Random.Range(0, 5));
+
+            ghostBalls.Add(new Vector2(pos.x, pos.y), obj);
+        }
+
+        // set active for queue balls
+        foreach (Vector2 pos in queueNextBallPos.Keys)
+        {
+            queuePos.Add(pos);
+            cells[pos].queueIDColor = Random.Range(0, 5);
+            setNextSpawnColor(cells[pos], cells[pos].queueIDColor);
+            cells[pos].nextSpawn.SetActive(true);
+        }
+        setNextQueueBallsHUD(queuePos);
+
+    }
+
+    private void constructGameFresh()
+    {
+        // load necessary objects
+        generateBalls(initialBallsNum);
+        disableColliderAtBalls();
+        queuePos = generateBalls(nextBallsNum, true);
+    }
 }

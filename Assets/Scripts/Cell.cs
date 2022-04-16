@@ -8,9 +8,13 @@ public class Cell : MonoBehaviour
     [SerializeField] private Color baseColor, alterColor;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private GameObject highlight;
-    [SerializeField] public GameObject nextSpawn;
-   
+    public BoxCollider2D _collider;
+    public GameObject nextSpawn;
+    public SpriteRenderer nextSpawnRenderer;
     public int queueIDColor;
+
+
+
     public void init(bool isCheckedboardPattern)
     {
         spriteRenderer.color = isCheckedboardPattern ? baseColor : alterColor;
@@ -79,7 +83,6 @@ public class Cell : MonoBehaviour
             {
                 StartCoroutine(moveGhostBall(newBallPos, selectedBall));
                 // remove old position
-                GridManager.Instance.balls.Remove(oldBallPos);
                 GridManager.Instance.ghostBalls.Remove(oldBallPos);
                 // relocate to new position
                 GridManager.Instance.ghostBalls.Add(newBallPos,selectedBall);
@@ -99,11 +102,17 @@ public class Cell : MonoBehaviour
 
 
             // generate balls from the queue
-            GridManager.Instance.generateQueuedBalls(GridManager.Instance.queuePos);
+            GridManager.Instance.generateQueuedBalls(GridManager.Instance.getQueuePos());
 
             // generate ball for queue
 
-            GridManager.Instance.queuePos = GridManager.Instance.generateBalls(3, true);
+            GridManager.Instance.setQueuePos(GridManager.Instance.generateBalls(3, true));
+
+            // generate ghost ball at end of every turn
+            if (GridManager.Instance.readyToSpawnGhost)
+            {
+                GridManager.Instance.generateGhostBall(1);
+            }
 
             GridManager.Instance.disableColliderAtBalls();
 
@@ -111,6 +120,8 @@ public class Cell : MonoBehaviour
             // check line for ball explosion          
             //GridManager.Instance.explodeBall(Pathfinding.checkLines(selectedBall));
             StartCoroutine(checkExplode(selectedBall));
+
+            
         }
     }
 
@@ -134,7 +145,7 @@ public class Cell : MonoBehaviour
     {
         while (Vector3.Distance(ghostBall.transform.position, pos) > 0.001f)
         {
-            ghostBall.transform.position = Vector3.Lerp(ghostBall.transform.position, pos, Time.deltaTime * 20f);
+            ghostBall.transform.position = Vector3.Lerp(ghostBall.transform.position, pos, Time.deltaTime * 30f);
             yield return new WaitForFixedUpdate();
         }
     }

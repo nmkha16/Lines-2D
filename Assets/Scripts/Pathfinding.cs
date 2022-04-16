@@ -37,7 +37,8 @@ public class Pathfinding
 
             if (currentVector.x < 0 || currentVector.y < 0 || currentVector.x >= rows || currentVector.y >= cols // out of bound
                 || visited[Mathf.RoundToInt(currentVector.x), Mathf.RoundToInt(currentVector.y)] // cell visited
-                || GridManager.Instance.getBallPosition(currentVector) != null) // cell contains ball
+                || GridManager.Instance.getBallPosition(currentVector) != null
+                || GridManager.Instance.getGhostBallPosition(currentVector) != null) // cell contains ball
             {
                 /*if (parent.ContainsKey(currentVector))
                 {

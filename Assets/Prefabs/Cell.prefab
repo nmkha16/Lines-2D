@@ -266,7 +266,9 @@ MonoBehaviour:
   alterColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
   spriteRenderer: {fileID: 8351310664293035180}
   highlight: {fileID: 838177073481136644}
+  _collider: {fileID: -2297064600718676661}
   nextSpawn: {fileID: 6908639565134655376}
+  nextSpawnRenderer: {fileID: 1493634769799080448}
   queueIDColor: 0
 --- !u!61 &-2297064600718676661
 BoxCollider2D:

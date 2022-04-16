@@ -9,13 +9,17 @@ public class Ball : MonoBehaviour
     public GameObject highLight;
     public TrailRenderer trailRender;
     [SerializeField] public GridManager gridManager;
+    public CircleCollider2D _collider;
 
+    [HideInInspector]
     public Animator animator;
+
 
     public int _colorID;
 
     private void Start()
     {
+        _collider = GetComponent<CircleCollider2D>();
         if (tag == "Ball")
         {
             animator = GetComponent<Animator>();
