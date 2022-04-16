@@ -8,29 +8,51 @@ public class GridManager : MonoBehaviour
     public int[,] grid;
     [SerializeField] public int rows, cols;
     [SerializeField] private Cell cellPrefab;
-    [SerializeField] private Ball ballPrefab;
+    [SerializeField] private Ball ballPrefab, ghostBallPrefab;
+
     [SerializeField] private Camera _camera;
     [SerializeField] public int initialBallsNum, nextBallsNum;
 
+
     [SerializeField] private Color red, yellow, blue, pink, cyan;
 
-    public static Dictionary<Vector2,Ball> balls;
-    public static Dictionary<Vector2,Cell> cells;
+    [SerializeField] public GameObject explosionPrefab;
 
-    public static bool isSelected, isNextTurn;
+    public Dictionary<Vector2,Ball> balls;
+    public Dictionary<Vector2,Cell> cells;
 
-    public static Vector2[] queuePos = null;
+
+    public static bool isSelected, isGhostSelected;
+    private float timer;
+    public Dictionary<Vector2, Ball> ghostBalls; // to track how many ghost ball on screen
+
+    public Vector2[] queuePos;
     // Start is called before the first frame update
     void Start()
     {
-        isNextTurn = false;
         Instance = this;
         isSelected = false;
         balls = new Dictionary<Vector2, Ball>();
         cells = new Dictionary<Vector2, Cell>();
+        ghostBalls = new Dictionary<Vector2, Ball>();
         generateGrid();
+        timer = 3f;
     }
 
+
+    private void Update()
+    {
+        //spawn ghost spawn every 10s, limit 3
+        timer-=Time.deltaTime;
+        if (timer < 0)
+        {
+            if (ghostBalls.Count< 3){
+                generateGhostBall(1);
+            }
+
+            timer = 3f;
+        }
+    }
 
 
 
@@ -53,8 +75,8 @@ public class GridManager : MonoBehaviour
         }
         _camera.transform.position = new Vector3((float)rows / 2 - 0.5f, (float)cols / 2 - 0.5f, -10);
         generateBalls(initialBallsNum);
+        disableColliderAtBalls();
         queuePos = generateBalls(3, true);
-        isNextTurn = true;
     }
 
     /*
@@ -92,14 +114,21 @@ public class GridManager : MonoBehaviour
                         if (nextPlace == 0)
                         {
                             //spawn ball prefab
-                            var spawnedBall = Instantiate(ballPrefab, new Vector3(i, j), Quaternion.identity);
-                            spawnedBall.name = $"Ball {i} {j}";
-                            spawnedBall.init(Random.Range(0, 5));
+                            //  var spawnedBall = Instantiate(ballPrefab, new Vector3(i, j), Quaternion.identity);
+                            GameObject spawnedBall = ObjectPooler.Instance.getPooledObject("Ball");
+                            if (spawnedBall != null)
+                            {
+                                spawnedBall.name = $"Ball {i} {j}";
+                                spawnedBall.transform.position = new Vector2(i, j);
+                                spawnedBall.GetComponent<Ball>().init(Random.Range(0, 5));
 
-                            balls.Add(new Vector2(i,j),spawnedBall);
+                                balls.Add(new Vector2(i, j), spawnedBall.GetComponent<Ball>());
 
-                            isPlaced=true;
-                            break;
+                                isPlaced = true;
+                                spawnedBall.SetActive(true);
+                                break;
+                            }
+
                         }
                     }
                 }
@@ -162,11 +191,18 @@ public class GridManager : MonoBehaviour
 
                 cells[pos].nextSpawn.SetActive(false);
 
-                var newBall = Instantiate(ballPrefab, new Vector3(pos.x, pos.y), Quaternion.identity);
-                newBall.name = $"Ball {pos.x} {pos.y}";
-                newBall.init(cells[pos].queueIDColor);
+                GameObject spawnedBall = ObjectPooler.Instance.getPooledObject("Ball");
+                if (spawnedBall != null)
+                {
+                    spawnedBall.name = $"Ball {pos.x} {pos.y}";
+                    spawnedBall.transform.position = pos;
+                    spawnedBall.GetComponent<Ball>().init(Random.Range(0, 5));
 
-                balls.Add(pos, newBall);
+                    balls.Add(pos, spawnedBall.GetComponent<Ball>());
+                    spawnedBall.GetComponent<Ball>().init(cells[pos].queueIDColor);
+                    spawnedBall.SetActive(true);
+                }
+
             }
             else
             {
@@ -175,6 +211,49 @@ public class GridManager : MonoBehaviour
         }
     }
 
+
+    private void generateGhostBall(int targetNum)
+    {
+        int count = rows * cols - balls.Count - ghostBalls.Count;
+
+        int count2 = count - targetNum;
+
+        int nextPlace;
+        bool isPlaced;
+
+        while (count > count2)
+        {
+            nextPlace = Random.Range(0, count--) + 1;
+            isPlaced = false;
+
+            for (int i = 0; i < cols; i++)
+            {
+                if (isPlaced) break;
+
+                for (int j = 0; j < rows; ++j)
+                {
+                    if (getBallPosition(new Vector2(i, j)) == null
+                        && !cells[new Vector2(i,j)].nextSpawn.activeInHierarchy)
+                    {
+                        nextPlace--;
+                        if (nextPlace == 0)
+                        {
+                            //spawn ghostBall prefab
+                            var spawnedBall = Instantiate(ghostBallPrefab, new Vector3(i, j), Quaternion.identity);
+                            spawnedBall.name = $"GhostBall {i} {j}";
+                            spawnedBall.init(Random.Range(0, 5));
+
+                            balls.Add(new Vector2(i, j), spawnedBall);
+                            ghostBalls.Add(new Vector2(i,j),spawnedBall);
+
+                            isPlaced = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
     // get ball at position
     public Ball getBallPosition(Vector2 pos)
     {
@@ -186,6 +265,15 @@ public class GridManager : MonoBehaviour
         return null;
     }
 
+    public Cell getCellPosition(Vector2 pos)
+    {
+        if (cells.TryGetValue(pos, out var cell))
+        {
+            return cell;
+        }
+
+        return null;
+    }
 
     public Vector2 getPositionFromName(string name)
     {
@@ -230,82 +318,60 @@ public class GridManager : MonoBehaviour
     }
 
 
-    // we check 4 direction of the balls user just moved to
-    public void checkLines(Ball movedBall)
+    // Handle explode ball
+    public void explodeBall(List<Vector2> pos)
     {
-        List<Vector2> ballsExploded = new List<Vector2>();
-        int[] u = new int[]{ 0, 1, 1, 1 };
-        int[] v = new int[] { 1, 0, -1, 1 };
-
-        int count; // count number of same color balls
-        int i, j;
-
-
-        Vector2 movedBallPos = getPositionFromName(movedBall.name);
-
-        // dIndex is 4 directions
-        for (int dIndex = 0; dIndex < 4; dIndex++)
+        if (pos.Count == 0) return;
+        // spawn explosion prefab on those position
+        for (int i = 0; i < pos.Count; i++)
         {
-            count = 0;
-
-            i = Mathf.RoundToInt(movedBallPos.x);
-            j = Mathf.RoundToInt(movedBallPos.y);
-
-            while (true)
+            // spawn explosion from pool
+            GameObject explosion = ObjectPooler.Instance.getPooledObject("Explosion");
+            if (explosion != null)
             {
-                i+=u[dIndex];
-                j+=v[dIndex];
-
-                if (i < 0 || j < 0 || i >= rows || j >= cols) break;
-                if (getBallPosition(new Vector2(i, j)) == null) break;
-                if (movedBall._colorID != getBallPosition(new Vector2(i, j))._colorID) break;
-
-                count++;
+                explosion.transform.position = pos[i];
+                explosion.SetActive(true);
+                explosion.GetComponentInChildren<Animator>().Play("Explosion");
             }
 
-            i = Mathf.RoundToInt(movedBallPos.x);
-            j = Mathf.RoundToInt(movedBallPos.y);
-
-            while (true)
+            GameObject readyToExplodeBall = getBallPosition(pos[i]).gameObject;
+            balls.Remove(pos[i]); // remove old balls position in dictionary too
+            if (readyToExplodeBall.tag == "GhostBall")
             {
-                i -= u[dIndex];
-                j -= v[dIndex];
-
-                if (i < 0 || j < 0 || i >= rows || j >= cols) break;
-                if (getBallPosition(new Vector2(i, j)) == null) break;
-                if (movedBall._colorID != getBallPosition(new Vector2(i, j))._colorID) break;
-
-                count++;
+                ghostBalls.Remove(pos[i]); // remove old ghost ball position too
+                Destroy(readyToExplodeBall); // destroy ghost ball, no need to bring back to pool
+                continue;
             }
-
-            count++;
-
-            if (count >= 5)
-            {
-                while (count--> 0)
-                {
-                    i += u[dIndex];
-                    j += v[dIndex];
-
-                    if (i!= movedBallPos.x || j!= movedBallPos.y)
-                    {
-                        ballsExploded.Add(new Vector2(i, j));
-                        
-                    }
-                }
-            }
-        }
-        
-        if (ballsExploded.Count > 0)
-        {
-            ballsExploded.Add(movedBallPos);
-
-            foreach(Vector2 b in ballsExploded)
-            {
-                Debug.Log(b);
-            }
+            // Return the object back to pool
+            ObjectPooler.Instance.DestroyOnExplosion(readyToExplodeBall);
         }
 
-        
+        enableColliderAtBalls();
     }
+
+
+    // disable collider on cell that has a ball on it
+    public void disableColliderAtBalls()
+    {
+        // traverse through balls dictionary key
+        foreach(var pos in balls.Keys)
+        {
+            cells[pos].GetComponent<BoxCollider2D>().enabled = false;
+        }
+    }
+
+    
+    // enable collider on cell which doesn't have a ball on it
+    public void enableColliderAtBalls()
+    {
+        // traverse through balls dictionary key
+        foreach (var pos in cells.Keys)
+        {
+            if (getBallPosition(pos) == null)
+            {
+                cells[pos].GetComponent<BoxCollider2D>().enabled = true;
+            }
+        }
+    }
+    
 }

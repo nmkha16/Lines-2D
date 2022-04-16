@@ -47,6 +47,7 @@ MonoBehaviour:
   cols: 10
   cellPrefab: {fileID: 7426479160382519919, guid: 6f4c06cee13c41a4e89ae371ca7e3577, type: 3}
   ballPrefab: {fileID: 9214530130593130591, guid: a6e55772cd216094ba3a0cf48a4398c4, type: 3}
+  ghostBallPrefab: {fileID: 3689665850350969631, guid: 3ce127135a430d64981d253ebb854f13, type: 3}
   _camera: {fileID: 0}
   initialBallsNum: 5
   nextBallsNum: 0
@@ -55,3 +56,4 @@ MonoBehaviour:
   blue: {r: 0.21568628, g: 0.5803922, b: 0.98039216, a: 1}
   pink: {r: 1, g: 0.3254902, b: 0.8352941, a: 1}
   cyan: {r: 0.3254902, g: 0.9882353, b: 1, a: 1}
+  explosionPrefab: {fileID: 139366, guid: b185c1a9cf067374586d095111b15bd1, type: 3}

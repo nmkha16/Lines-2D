@@ -10,7 +10,17 @@ public class Ball : MonoBehaviour
     public TrailRenderer trailRender;
     [SerializeField] public GridManager gridManager;
 
+    public Animator animator;
+
     public int _colorID;
+
+    private void Start()
+    {
+        if (tag == "Ball")
+        {
+            animator = GetComponent<Animator>();
+        }
+    }
 
     // set random color
     public void init(int colorID)
@@ -63,23 +73,49 @@ public class Ball : MonoBehaviour
     {
         if (GridManager.isSelected)
         {
-            cancelSelect(GameObject.FindGameObjectWithTag("SelectedBall"));
+            var ball = GameObject.FindGameObjectWithTag("SelectedBall");
+            if (ball == null)
+            {
+                // try finding with ghost tag
+                ball = GameObject.FindGameObjectWithTag("SelectedGhostBall");
+            }
+            cancelSelect(ball.GetComponent<Ball>());
         }
         else
         {
-            highLight.SetActive(true);
-            this.tag = "SelectedBall";
-            GridManager.isSelected = true;
+            if (gameObject.tag == "Ball")
+            {
+                animator.Play("Idle");
+                //highLight.SetActive(true);
+                this.tag = "SelectedBall";
+                GridManager.isSelected = true;
+                
+            }
+            else
+            {
+                highLight.SetActive(true);
+                this.tag = "SelectedGhostBall";
+                GridManager.isSelected = true;
+            }
         }
     }
 
-    private void cancelSelect(GameObject selectedBall)
+    private void cancelSelect(Ball selectedBall)
     {
         if (selectedBall == null) return;
 
-        selectedBall.tag = "Ball";
-        selectedBall.GetComponent<Ball>().highLight.SetActive(false);
-        GridManager.isSelected = false;
+        if (selectedBall.tag == "SelectedBall")
+        {
+            selectedBall.animator.Play("Default");
+            selectedBall.tag = "Ball";
+            GridManager.isSelected = false;
+        }
+        else
+        {
+            selectedBall.tag = "GhostBall";
+            selectedBall.highLight.SetActive(false);
+            GridManager.isSelected = false;
+        }
     }
 
 

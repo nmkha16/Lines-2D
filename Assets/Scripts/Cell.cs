@@ -31,59 +31,86 @@ public class Cell : MonoBehaviour
     {
         if (GridManager.isSelected)
         {
-            var selectedBall = GameObject.FindGameObjectWithTag("SelectedBall").GetComponent<Ball>();
+           Ball selectedBall;
+            if (GameObject.FindGameObjectsWithTag("SelectedBall").Length > 0) // there is an object with tag "SelectedBall"
+            {
+                selectedBall = GameObject.FindGameObjectWithTag("SelectedBall").GetComponent<Ball>();
+            }
+            else // 
+            {
+                selectedBall = GameObject.FindGameObjectWithTag("SelectedGhostBall").GetComponent<Ball>();
+            }
 
+            /// must ignore ghost since ghost doesn't have idle animation
+            if (selectedBall.tag == "SelectedBall") selectedBall.animator.Play("Default");
             // get current selected ball position and current cell position that user click on
             Vector2 oldBallPos = GridManager.Instance.getPositionFromName(selectedBall.name);
             Vector2 newBallPos = GridManager.Instance.getPositionFromName(name);
 
+
             if (oldBallPos == newBallPos) return;
-            if (GridManager.Instance.getBallPosition(newBallPos) != null) return;
+            //if (GridManager.Instance.getBallPosition(newBallPos) != null) return; // new position has a ball inside it
 
-
-
-            // do remove old ball position
-            GridManager.balls.Remove(oldBallPos);
-            // to mark start position is empty
-            List<Vector2> path = Pathfinding.BFS(oldBallPos, newBallPos);
-
-            if (path.Count== 0) // return path is zero meaning no path is found
+            /////////////////////////// move ball here           
+            if (selectedBall.tag == "SelectedBall")
             {
-                GridManager.balls.Add(oldBallPos,selectedBall); // set the balls dictionary back
-                return;
+                /// bfs - move for normal ball
+                // do remove old ball position
+                GridManager.Instance.balls.Remove(oldBallPos);
+                // to mark start position is empty
+                List<Vector2> path = Pathfinding.BFS(oldBallPos, newBallPos);
+
+                if (path.Count == 0) // return path is zero meaning no path is found
+                {
+                    GridManager.Instance.balls.Add(oldBallPos, selectedBall); // set the balls dictionary back
+                    return;
+                }
+
+
+                // perform move ball
+                StartCoroutine(moveBall(path, selectedBall));
+
+                ///////////
+                // rename ball properties
+                selectedBall.tag = "Ball";
+                selectedBall.name = $"Ball {newBallPos.x} {newBallPos.y}";
+            }
+            else // selected ball is a ghost ball
+            {
+                StartCoroutine(moveGhostBall(newBallPos, selectedBall));
+                // remove old position
+                GridManager.Instance.balls.Remove(oldBallPos);
+                GridManager.Instance.ghostBalls.Remove(oldBallPos);
+                // relocate to new position
+                GridManager.Instance.ghostBalls.Add(newBallPos,selectedBall);
+                // rename ball properties
+                selectedBall.highLight.SetActive(false);
+                selectedBall.tag = "GhostBall";
+                selectedBall.name = $"GhostBall {newBallPos.x} {newBallPos.y}";
             }
 
 
-            // perform move ball
-            StartCoroutine(moveBall(path, selectedBall));
-
-            // rename ball properties
-            selectedBall.highLight.SetActive(false);
-            selectedBall.tag = "Ball";
-            selectedBall.name = $"Ball {newBallPos.x} {newBallPos.y}";
 
             //add new ball pos to dictionary & remove old ball position
-            GridManager.balls.Add(newBallPos, selectedBall);
+            GridManager.Instance.balls.Add(newBallPos, selectedBall);
+            GridManager.Instance.getCellPosition(oldBallPos).GetComponent<BoxCollider2D>().enabled = true;
+
             GridManager.isSelected = false;
 
 
-
-            if (GridManager.isNextTurn)
-            {
-                GridManager.Instance.generateQueuedBalls(GridManager.queuePos);
-                GridManager.isNextTurn = false;
-            }
+            // generate balls from the queue
+            GridManager.Instance.generateQueuedBalls(GridManager.Instance.queuePos);
 
             // generate ball for queue
-            if (!GridManager.isNextTurn)
-            {
-                GridManager.queuePos = GridManager.Instance.generateBalls(3, true);
-                GridManager.isNextTurn = true;
-            }
+
+            GridManager.Instance.queuePos = GridManager.Instance.generateBalls(3, true);
+
+            GridManager.Instance.disableColliderAtBalls();
 
 
-            // check line for ball explosion
-            GridManager.Instance.checkLines(selectedBall);
+            // check line for ball explosion          
+            //GridManager.Instance.explodeBall(Pathfinding.checkLines(selectedBall));
+            StartCoroutine(checkExplode(selectedBall));
         }
     }
 
@@ -103,4 +130,18 @@ public class Cell : MonoBehaviour
         }
     }
     
+    private IEnumerator moveGhostBall(Vector2 pos, Ball ghostBall)
+    {
+        while (Vector3.Distance(ghostBall.transform.position, pos) > 0.001f)
+        {
+            ghostBall.transform.position = Vector3.Lerp(ghostBall.transform.position, pos, Time.deltaTime * 20f);
+            yield return new WaitForFixedUpdate();
+        }
+    }
+
+    IEnumerator checkExplode(Ball selectedBall)
+    {
+        yield return new WaitForSeconds(0.2f);
+        GridManager.Instance.explodeBall(Pathfinding.checkLines(selectedBall));
+    }
 }

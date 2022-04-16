@@ -7,6 +7,9 @@ TagManager:
   - EmptyCell
   - Ball
   - SelectedBall
+  - GhostBall
+  - SelectedGhostBall
+  - Explosion
   layers:
   - Default
   - TransparentFX

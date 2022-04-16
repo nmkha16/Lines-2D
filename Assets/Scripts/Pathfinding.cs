@@ -106,4 +106,74 @@ public class Pathfinding
         return shortestPath;
     }
 
+
+    // we check 4 direction of the balls user just moved to
+    public static List<Vector2> checkLines(Ball movedBall)
+    {
+        List<Vector2> connectedBalls = new List<Vector2>();
+        int[] u = new int[] { 0, 1, 1, 1 };
+        int[] v = new int[] { 1, 0, -1, 1 };
+
+        int count; // count number of same color balls
+        int i, j;
+
+
+        Vector2 movedBallPos = GridManager.Instance.getPositionFromName(movedBall.name);
+
+        // dIndex is 4 directions
+        for (int dIndex = 0; dIndex < 4; dIndex++)
+        {
+            count = 0;
+
+            i = Mathf.RoundToInt(movedBallPos.x);
+            j = Mathf.RoundToInt(movedBallPos.y);
+
+            
+            while (true)
+            {
+                i += u[dIndex];
+                j += v[dIndex];
+                // check position is invalid or no ball or ball is not the same color 
+                if (i < 0 || j < 0 || i >= GridManager.Instance.rows || j >= GridManager.Instance.cols) break;
+                if (GridManager.Instance.getBallPosition(new Vector2(i, j)) == null) break;
+                if (movedBall._colorID != GridManager.Instance.getBallPosition(new Vector2(i, j))._colorID) break;
+
+                count++;
+            }
+
+            i = Mathf.RoundToInt(movedBallPos.x);
+            j = Mathf.RoundToInt(movedBallPos.y);
+
+            while (true)
+            {
+                i -= u[dIndex];
+                j -= v[dIndex];
+
+                // check position is invalid or no ball or ball is not the same color 
+                if (i < 0 || j < 0 || i >= GridManager.Instance.rows || j >= GridManager.Instance.cols) break;
+                if (GridManager.Instance.getBallPosition(new Vector2(i, j)) == null) break;
+                if (movedBall._colorID != GridManager.Instance.getBallPosition(new Vector2(i, j))._colorID) break;
+
+                count++;
+            }
+            // count current moved ball too
+            count++;
+
+            if (count >= 5)
+            {
+                while (count-- > 0)
+                {
+                    i += u[dIndex];
+                    j += v[dIndex];
+
+                    if (i != movedBallPos.x || j != movedBallPos.y)
+                    {
+                        connectedBalls.Add(new Vector2(i, j)); // add all connected vector2 of connected balls
+                    }
+                }
+                connectedBalls.Add(movedBallPos); // also add the vector2 of the ball user just moved
+            }
+        }
+        return connectedBalls;
+    }
 }
