@@ -21,8 +21,17 @@ public class IngameHUD : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        applicationPath = Application.persistentDataPath + "/Save";
+        // need more insight on this code
+        // apparently persistentDataPath doesn't work on some machines including mine
+        //applicationPath = Application.persistentDataPath + "/Save";
 
+        // the real problem was project setting .net was net 2.0 standard, changing to .net 4.x fixed the problem
+        // the real suspect is JSON.NET is incompatible at NET2.0
+        applicationPath = Path.Combine(Application.persistentDataPath, "/Save/");
+
+        // this return path C:\Users\desol\AppData\Roaming\Lines98\Save\
+       // applicationPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) + "/Lines98/Save/";
+       // Debug.Log(applicationPath);
         setting.Formatting = Formatting.Indented;
         setting.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
         highScore.text = PlayerPrefs.GetInt("highscore").ToString();
@@ -70,7 +79,7 @@ public class IngameHUD : MonoBehaviour
             {
                 Directory.CreateDirectory(applicationPath);
             }
-            writeToFile(applicationPath+"/save.sav0", serializeSaveFile);
+            writeToFile(applicationPath+"save.sav0", serializeSaveFile);
             saveMessage.text = "SAVE COMPLETED!";
         }
         catch
@@ -82,8 +91,8 @@ public class IngameHUD : MonoBehaviour
     // this method return saveState
     public Savestate loadGame()
     {
-       // Debug.Log(applicationPath);
-        string serializedSaveFile = readFromFile(applicationPath + "/save.sav0");
+        Debug.Log(applicationPath);
+        string serializedSaveFile = readFromFile(applicationPath + "save.sav0");
         if (serializedSaveFile== "") return null;
 
         SavestateFormatter savestateFormatter = JsonConvert.DeserializeObject<SavestateFormatter>(serializedSaveFile, setting);
