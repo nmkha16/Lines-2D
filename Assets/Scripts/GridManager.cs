@@ -355,6 +355,9 @@ public class GridManager : MonoBehaviour
     public void explodeBall(List<Vector2> pos)
     {
         if (pos.Count == 0) return;
+        // play boom sound effect
+        SoundEffectController.Instance._boomSE.Play();
+
         // spawn explosion prefab on those position
         for (int i = 0; i < pos.Count; i++)
         {
@@ -496,7 +499,13 @@ public class GridManager : MonoBehaviour
     private void load()
     {
         Savestate saveFile = IngameHUD.Instance.loadGame();
-        if (saveFile == null) return;
+        if (saveFile == null)
+        {
+            // handle no save file
+            // just construct a new game without warning instead for the time being
+            constructGameFresh();
+            return;
+        }
         // update score & time
         IngameHUD.Instance.updateScore(saveFile._playScore);
         IngameHUD.Instance.updateTimer(saveFile._playTime);

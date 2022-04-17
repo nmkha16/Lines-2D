@@ -266,6 +266,7 @@ MonoBehaviour:
   alterColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
   spriteRenderer: {fileID: 8351310664293035180}
   highlight: {fileID: 838177073481136644}
+  moveSoundEffect: {fileID: 1534523919653361012, guid: 41aa6d8f1dd5dd644b659bc336ae7e4a, type: 3}
   _collider: {fileID: -2297064600718676661}
   nextSpawn: {fileID: 6908639565134655376}
   nextSpawnRenderer: {fileID: 1493634769799080448}

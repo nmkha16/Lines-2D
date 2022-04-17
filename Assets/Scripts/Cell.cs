@@ -55,6 +55,10 @@ public class Cell : MonoBehaviour
             if (oldBallPos == newBallPos) return;
             //if (GridManager.Instance.getBallPosition(newBallPos) != null) return; // new position has a ball inside it
 
+
+            // play move sound effect
+            SoundEffectController.Instance._moveSE.Play();
+
             /////////////////////////// move ball here           
             if (selectedBall.tag == "SelectedBall")
             {

@@ -7,7 +7,6 @@ public class IngameMenu : MonoBehaviour
     public static IngameMenu Instance { get; private set;}
 
     [SerializeField] GameObject pauseMenu, endMenu, saveAlert;
-
     
     private bool isPaused;
     private void Start()
