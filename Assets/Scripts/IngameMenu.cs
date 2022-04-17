@@ -1,16 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 public class IngameMenu : MonoBehaviour
 {
-    [SerializeField] GameObject pauseMenu, saveAlert;
+    public static IngameMenu Instance { get; private set;}
 
+    [SerializeField] GameObject pauseMenu, endMenu, saveAlert;
+
+    
     private bool isPaused;
     private void Start()
     {
+        Instance = this;
         isPaused = false;
         pauseMenu.SetActive(false);
+        endMenu.SetActive(false);
     }
 
     // Update is called once per frame
@@ -45,6 +50,24 @@ public class IngameMenu : MonoBehaviour
         GridManager.Instance.disableAllBallsCollider(false);
         Time.timeScale = 1f;
         pauseMenu.SetActive(false);
+    }
+
+    public void goToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(sceneBuildIndex: 0);
+    }
+
+    public void goToEndMenu()
+    {
+        // set a new high score record
+        if (IngameHUD.Instance.getTotalScore() > PlayerPrefs.GetInt("highscore"))
+        {
+            PlayerPrefs.SetInt("highscore",IngameHUD.Instance.getTotalScore());
+        }
+
+        Time.timeScale = 0f;
+        endMenu.SetActive(true);
     }
 
     public void gotoSaveAlert()

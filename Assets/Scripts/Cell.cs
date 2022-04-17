@@ -122,6 +122,12 @@ public class Cell : MonoBehaviour
             StartCoroutine(checkExplode(selectedBall));
 
             
+            // check for remaining ball
+            if (GridManager.Instance.getRemainingPosition() < 1)
+            {
+               IngameMenu.Instance.goToEndMenu();
+            }
+
         }
     }
 

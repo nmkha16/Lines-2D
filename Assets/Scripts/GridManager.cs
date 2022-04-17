@@ -34,7 +34,6 @@ public class GridManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        PlayerPrefs.SetInt("load",1) ;
         Instance = this;
         isSelected = false;
         balls = new Dictionary<Vector2, Ball>();
@@ -43,7 +42,7 @@ public class GridManager : MonoBehaviour
         queuePos = new List<Vector2>();
         readyToSpawnGhost = false;
 
-        timer = 3f;
+        timer = 10f;
 
 
         generateGrid();
@@ -70,7 +69,7 @@ public class GridManager : MonoBehaviour
                 //generateGhostBall(1);
             }
 
-            timer = 3f;
+            timer = 10f;
         }
     }
 
@@ -480,7 +479,7 @@ public class GridManager : MonoBehaviour
 
 
 
-    // do the save
+    // do the save, which return save state
     public Savestate save()
     {
         Dictionary<Vector2, int> _queuePos = new Dictionary<Vector2, int>();
@@ -520,9 +519,11 @@ public class GridManager : MonoBehaviour
         foreach (Vector2 pos in ballsPos.Keys)
         {
             GameObject obj = ObjectPooler.Instance.getPooledObject("Ball");
+            obj.name = $"Ball {pos.x} {pos.y}";
             var ballScript = obj.GetComponent<Ball>();
             ballScript.init(ballsPos[pos]);
             obj.transform.position = pos;
+            obj.SetActive(true);
             balls.Add(pos, ballScript);
         }
 
@@ -531,8 +532,7 @@ public class GridManager : MonoBehaviour
         {
             var obj = Instantiate(ghostBallPrefab, new Vector3(pos.x,pos.y), Quaternion.identity);
             obj.name = $"GhostBall {pos.x} {pos.y}";
-            obj.init(Random.Range(0, 5));
-
+            obj.init(ghostBallsPos[pos]);
             ghostBalls.Add(new Vector2(pos.x, pos.y), obj);
         }
 
@@ -540,12 +540,11 @@ public class GridManager : MonoBehaviour
         foreach (Vector2 pos in queueNextBallPos.Keys)
         {
             queuePos.Add(pos);
-            cells[pos].queueIDColor = Random.Range(0, 5);
-            setNextSpawnColor(cells[pos], cells[pos].queueIDColor);
+            setNextSpawnColor(cells[pos], queueNextBallPos[pos]);
+            cells[pos].queueIDColor = queueNextBallPos[pos]; 
             cells[pos].nextSpawn.SetActive(true);
         }
         setNextQueueBallsHUD(queuePos);
-
     }
 
     private void constructGameFresh()
@@ -554,5 +553,11 @@ public class GridManager : MonoBehaviour
         generateBalls(initialBallsNum);
         disableColliderAtBalls();
         queuePos = generateBalls(nextBallsNum, true);
+    }
+
+    // if there is no remaining game, end here
+    public int getRemainingPosition()
+    {
+        return rows*cols - balls.Count - ghostBalls.Count;
     }
 }
