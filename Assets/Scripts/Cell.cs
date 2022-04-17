@@ -11,9 +11,13 @@ public class Cell : MonoBehaviour
     public BoxCollider2D _collider;
     public GameObject nextSpawn;
     public SpriteRenderer nextSpawnRenderer;
+    
+    [SerializeField] public SpriteRenderer changeColorRenderer;
+    [SerializeField] public GameObject changeColor;
+
+    [HideInInspector]
+    public int nextIDColorToChange;
     public int queueIDColor;
-
-
 
     public void init(bool isCheckedboardPattern)
     {
@@ -54,16 +58,15 @@ public class Cell : MonoBehaviour
 
             if (oldBallPos == newBallPos) return;
             //if (GridManager.Instance.getBallPosition(newBallPos) != null) return; // new position has a ball inside it
+            // no need to check this since i have disabled the collider on cell has ball, it wont fire mouseClick event
 
-
-            // play move sound effect
-            SoundEffectController.Instance._moveSE.Play();
+            
 
             /////////////////////////// move ball here           
             if (selectedBall.tag == "SelectedBall")
             {
                 /// bfs - move for normal ball
-                // do remove old ball position
+                // do remove old ball position ->
                 GridManager.Instance.balls.Remove(oldBallPos);
                 // to mark start position is empty
                 List<Vector2> path = Pathfinding.BFS(oldBallPos, newBallPos);
@@ -96,7 +99,8 @@ public class Cell : MonoBehaviour
                 selectedBall.name = $"GhostBall {newBallPos.x} {newBallPos.y}";
             }
 
-
+            // play move sound effect
+            SoundEffectController.Instance._moveSE.Play();
 
             //add new ball pos to dictionary & remove old ball position
             GridManager.Instance.balls.Add(newBallPos, selectedBall);
@@ -104,12 +108,14 @@ public class Cell : MonoBehaviour
 
             GridManager.isSelected = false;
 
+            // check if user move the ball to the special change color cell
+            stepOnChangeColorCell(newBallPos);
+
 
             // generate balls from the queue
             GridManager.Instance.generateQueuedBalls(GridManager.Instance.getQueuePos());
 
             // generate ball for queue
-
             GridManager.Instance.setQueuePos(GridManager.Instance.generateBalls(3, true));
 
             // generate ghost ball at end of every turn
@@ -118,6 +124,7 @@ public class Cell : MonoBehaviour
                 GridManager.Instance.generateGhostBall(1);
             }
 
+            //disable cell's collider which has ball on it
             GridManager.Instance.disableColliderAtBalls();
 
 
@@ -164,5 +171,19 @@ public class Cell : MonoBehaviour
     {
         yield return new WaitForSeconds(0.2f);
         GridManager.Instance.explodeBall(Pathfinding.checkLines(selectedBall));
+    }
+
+
+    private void stepOnChangeColorCell(Vector2 pos)
+    {
+        // 
+        if (pos == null) return;
+        if (pos == GridManager.Instance.changeColorCellLoc)
+        {
+            GridManager.Instance.balls[pos].init(nextIDColorToChange);
+            GridManager.Instance.cells[pos].changeColor.SetActive(false);
+            GridManager.Instance.readyToSpawnColorCell = true;
+            GridManager.Instance.changeColorCellLoc = new Vector2(-1, -1); // reset the value which hold pos of changeColorCell
+        }
     }
 }

@@ -31,6 +31,10 @@ public class GridManager : MonoBehaviour
     public bool readyToSpawnGhost;
 
     public List<Image> queueBall;
+
+    public Vector2 changeColorCellLoc; // store the change color ball cell location
+    public bool readyToSpawnColorCell;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -41,7 +45,7 @@ public class GridManager : MonoBehaviour
         ghostBalls = new Dictionary<Vector2, Ball>();
         queuePos = new List<Vector2>();
         readyToSpawnGhost = false;
-
+        readyToSpawnColorCell = true;
         timer = 10f;
 
 
@@ -63,10 +67,23 @@ public class GridManager : MonoBehaviour
         timer-=Time.deltaTime;
         if (timer < 0)
         {
+            // spawn ghost ball
             if (ghostBalls.Count< 3){
                 // set ready to spawn ghost true
                 readyToSpawnGhost=true;
                 //generateGhostBall(1);
+            }
+
+            if (readyToSpawnColorCell) {
+                //spawn special cell allow changing ball color
+                int prob = Random.Range(1, 5);
+
+                // 75% chance to spawn a cell
+                if (prob< 4)
+                {
+                    spawnChangeColorCell();
+                }
+
             }
 
             timer = 10f;
@@ -565,10 +582,86 @@ public class GridManager : MonoBehaviour
         queuePos = generateBalls(nextBallsNum, true);
     }
 
-    // if there is no remaining game, end here
+    // if there is no remaining position to move, end here
     public int getRemainingPosition()
     {
         return rows*cols - balls.Count - ghostBalls.Count;
     }
 
+
+    // add new game feature
+    // every 10s, 75% chance to spawn a change color cell
+    // move the ball to that specific cell to change the ball color
+
+    public void spawnChangeColorCell()
+    {
+        // find a random postion to spawn that special cell
+        int count = rows * cols - balls.Count - ghostBalls.Count;
+
+        // we only need to spawn 1 cell effect only
+        int count2 = count - 1;
+
+        int nextPlace;
+
+        while (count > count2)
+        {
+            nextPlace = Random.Range(0, count--) + 1;
+
+            for (int i = 0; i < cols; i++)
+            {
+
+                for (int j = 0; j < rows; ++j)
+                {
+                    if (getBallPosition(new Vector2(i, j)) == null && getGhostBallPosition(new Vector2(i,j)) == null)
+                    {
+                        nextPlace--;
+                        // spawn the cell to change ball color feature
+                        if (nextPlace == 0)
+                        {
+                            changeColorCellLoc = new Vector2(i, j);
+                            initNewChangeColorFeature(changeColorCellLoc, Random.Range(0, 5));
+                            readyToSpawnColorCell = false;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private void initNewChangeColorFeature(Vector2 pos,int idColor)
+    {
+                cells[pos].nextIDColorToChange = idColor;
+
+        switch (idColor)
+        {
+            case 0:
+                {
+                    cells[pos].changeColorRenderer.color = red;
+                    break;
+                }
+            case 1:
+                {
+                    cells[pos].changeColorRenderer.color = yellow;
+                    break;
+                }
+            case 2:
+                {
+                    cells[pos].changeColorRenderer.color = blue;
+                    break;
+                }
+            case 3:
+                {
+                    cells[pos].changeColorRenderer.color = pink;
+                    break;
+                }
+            case 4:
+                {
+                    cells[pos].changeColorRenderer.color = cyan;
+                    break;
+                }
+        }
+        cells[pos].changeColor.SetActive(true);
+    }
 }

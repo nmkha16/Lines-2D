@@ -10,6 +10,7 @@ TagManager:
   - GhostBall
   - SelectedGhostBall
   - Explosion
+  - ChangeColor
   layers:
   - Default
   - TransparentFX
