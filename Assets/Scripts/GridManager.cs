@@ -357,6 +357,7 @@ public class GridManager : MonoBehaviour
         if (pos.Count == 0) return;
         // play boom sound effect
         SoundEffectController.Instance._boomSE.Play();
+        CameraShake.Instance.doShake(0.5f);
 
         // spawn explosion prefab on those position
         for (int i = 0; i < pos.Count; i++)
@@ -569,4 +570,5 @@ public class GridManager : MonoBehaviour
     {
         return rows*cols - balls.Count - ghostBalls.Count;
     }
+
 }
